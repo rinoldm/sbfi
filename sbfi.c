@@ -227,7 +227,6 @@ int *optim_code(char *code)
         }
    }
 
-
     // Removing all the spaces
 
     for (i = 0, j = 0; code[i]; ++i)
