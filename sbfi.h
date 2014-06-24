@@ -9,6 +9,8 @@
 #include <stdarg.h>
 #include <unistd.h>
 
+// Error messages
+
 #define ERROR_NO_ARGS       "you must specify a file"
 #define ERROR_TOO_MANY_ARGS "you can't specify more than one file"
 #define ERROR_ALLOC         "the memory could not be allocated"
@@ -18,14 +20,27 @@
 #define ERROR_BRACKETS      "unmatched bracket at position %d"
 #define ERROR_MEMORY        "attempt to reach the cell %d which is outside of the memory (0 - %d)"
 
+// Possible values for the MEMORY_BEHAVIOR macro
+
 #define NONE    0
 #define EXTEND  1
 #define ABORT   2
 #define WRAP    3
 #define BLOCK   4
 
+// Macro used for the output buffer
+
 #define CHUNK_SIZE 1024
 #define PRINT_BUFFER(size) { write(1, &buffer, size); buffer_index = 0; }
+
+/*
+ * The magical computed goto : code[++i] reads the next bytecode instruction,
+ * which is then used as an index for instr, the array of label addresses,
+ * and the address we got is accessed by the goto * (computed goto), which
+ * allow to execute the program without conditional branches or function
+ * call overheads. It's cool and fast *_*
+ */
+ 
 #define MOVE_TO_NEXT goto *(instr[(int)code[++i]]);
 
 #endif
