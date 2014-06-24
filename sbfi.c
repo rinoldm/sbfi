@@ -2,7 +2,8 @@
 
 #include "sbfi.h"
 
-/* Use these macros to define the Brainfuck behavior.
+/*
+ * Use these macros to define the Brainfuck behavior.
  *
  * CELL can be any integer type (default : unsigned char).
  *
