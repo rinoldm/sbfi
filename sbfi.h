@@ -36,8 +36,8 @@
 /*
  * The magical computed goto : code[++i] reads the next bytecode instruction,
  * which is then used as an index for instr, the array of label addresses,
- * and the address we got is accessed by the goto * (computed goto), which
- * allow to execute the program without conditional branches or function
+ * and the address we get is accessed by the goto * (computed goto), which
+ * allows to execute the program without conditional branches or function
  * call overheads. It's cool and fast *_*
  */
  
