@@ -1,7 +1,7 @@
 sbfi
 ====
 
-Simple BrainFuck Interpreter written in C by Maxime Rinoldo.
+Simple BrainFuck Interpreter written in C by Maxime Rinoldo. The aim of this interpreter is to be both very fast and easy to understand.
 
 For the moment, explanations about how my program works can be found in the comments !
 
