@@ -28,7 +28,7 @@
 #define WRAP    3
 #define BLOCK   4
 
-// Macro used for the output buffer
+// Macros used for the output buffer
 
 #define CHUNK_SIZE 1024
 #define PRINT_BUFFER(size) { write(1, &buffer, size); buffer_index = 0; }
