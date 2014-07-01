@@ -390,8 +390,8 @@ void exec_prog(char *code, int *coeff)
 
     /*
      * i is the index we use to read the Brainfuck program, now converted
-     * our bytecode. The MOVE_TO_NEXT macro increments i by one, so we
-     * initialize it with -1 to execute the instruction at position 0.
+     * into our bytecode. The MOVE_TO_NEXT macro increments i by one, so
+     * we initialize it with -1 to execute the instruction at position 0.
      * MOVE_TO_NEXT will move directly to the next instruction without
      * branching, thanks to the "computed gotos" made available by GCC.
      */
