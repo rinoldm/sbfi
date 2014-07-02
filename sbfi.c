@@ -145,7 +145,7 @@ int *optim_code(char *code)
     */
 
     size_t i;
-    int j;
+    size_t j;
     int count;
 
     for (i = 0, j = 0; code[i]; ++j)
@@ -356,10 +356,10 @@ void exec_prog(char *code, int *coeff)
     size_t array_size = INITIAL_ARRAY_SIZE;
 
     // ptr0 is where the cell array begins, ptr is the current pointer
-    
+
     CELL *ptr0 = xcalloc(array_size, sizeof(CELL));
     CELL *ptr = ptr0;
-    
+
     /*
      * Thanks to a GCC extension, we can use a special operator "&&" to get
      * label addresses and store them in an array of pointers. Thus, we will
@@ -368,7 +368,7 @@ void exec_prog(char *code, int *coeff)
      * which makes this approach very efficient. You can think of it a bit
      * like an inline function pointer array.
      */
-     
+
     static const void *instr[10] =
     {
         &&end,
@@ -422,7 +422,7 @@ void exec_prog(char *code, int *coeff)
      * it's a left or right bracket) but grouping the bracket instructions
      * like this generates fewer asm instructions.
      */
-     
+
     leftbracket:
     rightbracket:
         i += ((coeff[i] > 0) && !(*ptr)) || ((coeff[i] < 0) && *ptr) ? coeff[i] : 0;
@@ -442,7 +442,7 @@ void exec_prog(char *code, int *coeff)
         MOVE_TO_NEXT
 
     // If we encounter an output instruction, we put it in our buffer.
-    // When its size reaches CHUNK_SIZE, we print it, then empty it.
+    // When its size reaches CHUNK_SIZE, we print it, then reset it.
 
     output:
         buffer[buffer_index++] = *ptr;
