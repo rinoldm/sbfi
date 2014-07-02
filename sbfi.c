@@ -13,15 +13,15 @@
  * MEMORY_BEHAVIOR can be NONE, EXTEND, ABORT, WRAP or BLOCK
  * (default : NONE).
  *
- * EOF_INPUT_BEHAVIOR can be either LEAVE_UNCHANGED, or the
+ * EOF_INPUT_BEHAVIOR can be either NO_CHANGE, or the
  * integer that will be written to the cell if EOF is
- * encountered on input (default : LEAVE_UNCHANGED).
+ * encountered on input (default : NO_CHANGE).
  */
 
 #define CELL                unsigned char
 #define INITIAL_ARRAY_SIZE  30000
 #define MEMORY_BEHAVIOR     NONE
-#define EOF_INPUT_BEHAVIOR  LEAVE_UNCHANGED
+#define EOF_INPUT_BEHAVIOR  NO_CHANGE
 
 void error(const char *msg, ...)
 {
@@ -457,7 +457,7 @@ void exec_prog(char *code, int *coeff)
         int tmp;
         if ((tmp = getchar()) != EOF)
             *ptr = tmp;
-#if (EOF_INPUT_BEHAVIOR != LEAVE_UNCHANGED)
+#if (EOF_INPUT_BEHAVIOR != NO_CHANGE)
         else
             *ptr = EOF_INPUT_BEHAVIOR;
 #endif
