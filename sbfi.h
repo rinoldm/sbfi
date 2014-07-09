@@ -1,4 +1,4 @@
-/** Simple BrainFuck Interpreter V3.0 -- Written by Maxime Rinoldo **/
+/** Simple BrainFuck Interpreter V3.1 -- Written by Maxime Rinoldo **/
 
 #ifndef __SBFI_H__
 #define __SBFI_H__
@@ -28,19 +28,31 @@
 #define WRAP    3
 #define BLOCK   4
 
+#if (MEMORY_BEHAVIOR == EXTEND)
+    #define MOVE_POINTER extend_memory(&ptr0, &ptr, &array_size, mov[++i]);
+#elif (MEMORY_BEHAVIOR == ABORT)
+    #define MOVE_POINTER abort_memory(ptr0, &ptr, array_size, mov[++i]);
+#elif (MEMORY_BEHAVIOR == WRAP)
+    #define MOVE_POINTER wrap_memory(ptr0, &ptr, array_size, mov[++i]);
+#elif (MEMORY_BEHAVIOR == BLOCK)
+    #define MOVE_POINTER block_memory(ptr0, &ptr, array_size, mov[++i]);
+#else
+    #define MOVE_POINTER ptr += mov[++i];
+#endif
+
 // Macros used for the output buffer
 
 #define CHUNK_SIZE 1024
 #define PRINT_BUFFER(size) { write(1, &buffer, size); buffer_index = 0; }
 
 /*
- * The magical computed goto : code[++i] reads the next bytecode instruction,
+ * The magical computed goto : code[i] reads the next bytecode instruction,
  * which is then used as an index for instr, the array of label addresses,
  * and the address we get is accessed by the goto * (computed goto), which
  * allows to execute the program without conditional branches or function
  * call overheads. It's cool and fast *_*
  */
- 
-#define MOVE_TO_NEXT goto *(instr[(int)code[++i]]);
+
+#define NEXT_INSTRUCTION goto *(instr[(int)code[i]]);
 
 #endif
