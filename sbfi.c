@@ -1,6 +1,4 @@
-/** Simple BrainFuck Interpreter V3.0 -- Written by Maxime Rinoldo **/
-
-#include "sbfi.h"
+/** Simple BrainFuck Interpreter V3.1 -- Written by Maxime Rinoldo **/
 
 /*
  * Use these macros to define the Brainfuck behavior.
@@ -22,6 +20,10 @@
 #define INITIAL_ARRAY_SIZE  30000
 #define MEMORY_BEHAVIOR     NONE
 #define EOF_INPUT_BEHAVIOR  NO_CHANGE
+
+#include "sbfi.h"
+
+int *mov;
 
 void error(const char *msg, ...)
 {
@@ -51,7 +53,7 @@ void *xrealloc(void *p, size_t size)
     return (p);
 }
 
-char *get_src(char *filename)
+char *get_src(const char *filename)
 {
     FILE *file;
     char *code;
@@ -81,7 +83,7 @@ char *get_src(char *filename)
     return (code);
 }
 
-void check_src(char *code)
+void check_src(const char *code)
 {
     int i;
     int n;
@@ -131,34 +133,26 @@ void strip_comments(char *code)
     code[j] = '\0';
 }
 
+int match_pattern(const char *codeptr, const char *pattern)
+{
+    size_t i;
+    for (i = 0; i < strlen(pattern) && codeptr[i] == pattern[i]; ++i);
+    return (i == strlen(pattern));
+}
+
 int *optim_code(char *code)
 {
-    // This int array will allow us to compress commands
+    // These int arrays will allow us to compress commands
 
     int *coeff = xcalloc(strlen(code), sizeof(int));
+    mov = xcalloc(strlen(code), sizeof(int));
 
    /*
     * Compress consecutive +/-/</> into single commands
     * associated with the real count in the coeff array
     *
     * For example, +++++++ becomes + with 7
-    */
-
-    size_t i;
-    size_t j;
-    int count;
-
-    for (i = 0, j = 0; code[i]; ++j)
-    {
-        count = 1;
-        code[j] = code[i++];
-        if (strchr("+-<>", code[i]))
-            for (; code[j] == code[i]; ++i, ++count);
-        coeff[j] = count;
-    }
-    code[j] = '\0';
-
-   /*
+    *
     * We can compress a bit more by exploiting the symmetry
     * of similar commands, by changing +/- and >/< into a
     * single command and negating the associated integer in
@@ -170,15 +164,29 @@ int *optim_code(char *code)
     * +/- and >/< are transformed into c and p respectively
     */
 
+    size_t i;
+    size_t j;
+
     for (i = 0; code[i]; ++i)
     {
         if (code[i] == '-' || code[i] == '<')
-            coeff[i] *= -1;
+            coeff[i] = -1;
+        else
+            coeff[i] = 1;
         if (code[i] == '+' || code[i] == '-')
             code[i] = 'c';
         else if (code[i] == '<' || code[i] == '>')
             code[i] = 'p';
     }
+
+    for (i = 0, j = 0; code[i]; ++j)
+    {
+        code[j] = code[i];
+        coeff[j] = coeff[i];
+        if (strchr("cp", code[++i]))
+            for (; code[j] == code[i]; coeff[j] += coeff[i++]);
+    }
+    code[j] = '\0';
 
    /*
     * Optimization of simple Brainfuck constructs that
@@ -190,13 +198,15 @@ int *optim_code(char *code)
     * to optimize "simple loops" since it should be a huge
     * improvement, but unfortunately it made the program
     * far slower. I'll continue to search a better solution.
+    *
+    * TODO: make the parser cleaner (without spaces)
     */
 
-    for (i = 0; code[i + 2]; ++i)
+    for (i = 0; code[i]; ++i)
     {
         // [-] sets a cell to zero
 
-        if (!strncmp(code + i, "[c]", 3) && coeff[i + 1] == -1)
+        if (match_pattern(code + i, "[c]") && coeff[i + 1] == -1)
         {
             code[i] = '0';
             code[i + 1] = code[i + 2] = ' ';
@@ -204,7 +214,7 @@ int *optim_code(char *code)
 
         // [>] / [<] stop at the first zero cell they encounter
 
-        else if (!strncmp(code + i, "[p]", 3))
+        else if (match_pattern(code + i, "[p]"))
         {
             code[i] = 's';
             code[i + 1] = code[i + 2] = ' ';
@@ -217,13 +227,41 @@ int *optim_code(char *code)
         * by the pointer movements and set the current cell to zero.
         *
         * Here, the coeff will be the size of the pointer movement.
+        *
+        * TODO: add [p-p+] without destroying the performance for long.b :c
         */
 
-        else if (!strncmp(code + i, "[cpcp]", 6) && coeff[i + 1] == -1 && coeff[i + 3] == 1 && coeff[i + 2] == -coeff[i + 4])
+        else if (match_pattern(code + i, "[cpcp]") && coeff[i + 1] == -1 && coeff[i + 3] == 1 && coeff[i + 2] == -coeff[i + 4])
         {
             code[i] = 'm';
             code[i + 1] = code[i + 2] = code[i + 3] = code[i + 4] = code[i + 5] = ' ';
             coeff[i] = coeff[i + 2];
+        }
+
+        /*
+        else if (match_pattern(code + i, "[pcpc]") && coeff[i + 4] == -1 && coeff[i + 2] == 1 && coeff[i + 1] == -coeff[i + 3])
+        {
+            code[i] = 'm';
+            code[i + 1] = code[i + 2] = code[i + 3] = code[i + 4] = code[i + 5] = ' ';
+            coeff[i] = coeff[i + 1];
+        }
+        */
+
+       /*
+        * Moving the pointer is almost always needed to do anything
+        * in a Brainfuck program, so we can couple pointer movements
+        * with the command next to it to treat the latter as one
+        * "movement + command" instruction. The movement is stored
+        * in the "mov" array.
+        *
+        * TODO: For now, mov is a global variable, I should try to
+        * change that
+        */
+
+        else if (match_pattern(code + i, "p"))
+        {
+            code[i] = ' ';
+            mov[i + 1] += coeff[i];
         }
    }
 
@@ -234,7 +272,8 @@ int *optim_code(char *code)
         if (code[i] != ' ')
         {
             code[j] = code[i];
-            coeff[j++] = coeff[i];
+            coeff[j] = coeff[i];
+            mov[j++] = mov[i];
         }
     }
     code[j] = '\0';
@@ -252,7 +291,7 @@ int *optim_code(char *code)
     return (coeff);
 }
 
-int match_brackets(char *code, int *coeff, int left)
+int match_brackets(const char *code, int *coeff, const int left)
 {
    /*
     * Recursive function to match the brackets. Each time we
@@ -351,7 +390,7 @@ static void block_memory(CELL *ptr0, CELL **ptr, size_t size, int shift)
 }
 #endif
 
-void exec_prog(char *code, int *coeff)
+void exec_prog(const char *code, const int *coeff)
 {
     size_t array_size = INITIAL_ARRAY_SIZE;
 
@@ -390,32 +429,51 @@ void exec_prog(char *code, int *coeff)
 
     /*
      * i is the index we use to read the Brainfuck program, now converted
-     * into our bytecode. The MOVE_TO_NEXT macro increments i by one, so
+     * into our bytecode. The NEXT_INSTRUCTION macro increments i by one, so
      * we initialize it with -1 to execute the instruction at position 0.
-     * MOVE_TO_NEXT will move directly to the next instruction without
+     * NEXT_INSTRUCTION will move directly to the next instruction without
      * branching, thanks to the "computed gotos" made available by GCC.
      */
 
     int i = -1;
-    MOVE_TO_NEXT
+    MOVE_POINTER
+    NEXT_INSTRUCTION
 
     changevalue:
         *ptr += coeff[i];
-        MOVE_TO_NEXT
+        MOVE_POINTER
+        NEXT_INSTRUCTION
+
+/*
+ * WTF :c weird bug tests :
+ *
+ *                    | long.b | counter.b | prime.b | mandelbrot.b
+ * ----------------------------------------------------------------
+ *   ptr += coeff[i]  |  3.7s  |    6.5s   |   5.7s  |     3.4s
+ *   NEXT_INSTRUCTION |        |           |         |
+ * ----------------------------------------------------------------
+ *   ptr += coeff[i]  |  2.5s  |    7.7s   |   5.7s  |     3.1s
+ * ----------------------------------------------------------------
+ *  NEXT_INSTRUCTION  |  5.2s  |    7.5s   |   6.4s  |     3.7s
+ * ----------------------------------------------------------------
+ *   only the label   |  3.7s  |    6.5s   |   5.7s  |     3.1s
+ * ----------------------------------------------------------------
+ *  without the label |  2.9s  |    7.1s   |   6.2s  |     3.7s
+ *
+ * So I have to choose between the second and the fourth solution to
+ * optimize either long.b or counter.b.
+ *
+ * UPDATE A FEW HOURS LATER I still don't understand but I managed to
+ * change a bit the bug so that the second solution is the faster for
+ * both long.b and counter.b (--> 2.5s 6.5s 5.7s 3.1s). Enjoy c:
+ */
+
+// In short, if this (now useless) label is removed, the performance drops.
+// Plz help :c
 
     movepointer:
-#if (MEMORY_BEHAVIOR == EXTEND)
-        extend_memory(&ptr0, &ptr, &array_size, coeff[i]);
-#elif (MEMORY_BEHAVIOR == ABORT)
-        abort_memory(ptr0, &ptr, array_size, coeff[i]);
-#elif (MEMORY_BEHAVIOR == WRAP)
-        wrap_memory(ptr0, &ptr, array_size, coeff[i]);
-#elif (MEMORY_BEHAVIOR == BLOCK)
-        block_memory(ptr0, &ptr, array_size, coeff[i]);
-#else
         ptr += coeff[i];
-#endif
-        MOVE_TO_NEXT
+        //NEXT_INSTRUCTION
 
     /*
      * The tests with coeff[i] seem redundant (they're here to determine if
@@ -426,20 +484,24 @@ void exec_prog(char *code, int *coeff)
     leftbracket:
     rightbracket:
         i += ((coeff[i] > 0) && !(*ptr)) || ((coeff[i] < 0) && *ptr) ? coeff[i] : 0;
-        MOVE_TO_NEXT
+        MOVE_POINTER
+        NEXT_INSTRUCTION
 
     zerocell:
         *ptr = 0;
-        MOVE_TO_NEXT
+        MOVE_POINTER
+        NEXT_INSTRUCTION
 
     seekzerocell:
         for (; *ptr; ptr += coeff[i]);
-        MOVE_TO_NEXT
+        MOVE_POINTER
+        NEXT_INSTRUCTION
 
     movecell:
         *(ptr + coeff[i]) += *ptr;
         *ptr = 0;
-        MOVE_TO_NEXT
+        MOVE_POINTER
+        NEXT_INSTRUCTION
 
     // If we encounter an output instruction, we put it in our buffer.
     // When its size reaches CHUNK_SIZE, we print it, then reset it.
@@ -448,7 +510,8 @@ void exec_prog(char *code, int *coeff)
         buffer[buffer_index++] = *ptr;
         if (buffer_index == CHUNK_SIZE)
             PRINT_BUFFER(CHUNK_SIZE)
-        MOVE_TO_NEXT
+        MOVE_POINTER
+        NEXT_INSTRUCTION
 
     // In case of input, we first print and reset the output buffer.
 
@@ -461,7 +524,8 @@ void exec_prog(char *code, int *coeff)
         else
             *ptr = EOF_INPUT_BEHAVIOR;
 #endif
-        MOVE_TO_NEXT
+        MOVE_POINTER
+        NEXT_INSTRUCTION
 
     // When the program ends, we print the output buffer and free the cell array.
 
@@ -490,5 +554,6 @@ int main(int ac, char **av)
     exec_prog(code, coeff);
     free(code);
     free(coeff);
+    free(mov);
     return (EXIT_SUCCESS);
 }
