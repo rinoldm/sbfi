@@ -466,13 +466,16 @@ void exec_prog(const char *code, const int *coeff)
  * UPDATE A FEW HOURS LATER I still don't understand but I managed to
  * change a bit the bug so that the second solution is the faster for
  * both long.b and counter.b (--> 2.5s 6.5s 5.7s 3.1s). Enjoy c:
+ *
+ * UPDATE THE NEXT DAY with only the label the performance for long.b
+ * doesn't drop anymore. I haven't touched anything since yesterday... #2spooky4me
  */
 
 // In short, if this (now useless) label is removed, the performance drops.
 // Plz help :c
 
     movepointer:
-        ptr += coeff[i];
+        //ptr += coeff[i];
         //NEXT_INSTRUCTION
 
     /*
