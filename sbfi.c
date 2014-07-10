@@ -475,7 +475,7 @@ void exec_prog(const char *code, const int *coeff)
 // Plz help :c
 
     movepointer:
-        //ptr += coeff[i];
+        ptr += coeff[i];
         //NEXT_INSTRUCTION
 
     /*
