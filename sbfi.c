@@ -228,7 +228,7 @@ int *optim_code(char *code)
         *
         * Here, the coeff will be the size of the pointer movement.
         *
-        * TODO: add [p-p+] without destroying the performance for long.b :c
+        * TODO: add [p+p-] without destroying the performance for long.b :c
         */
 
         else if (match_pattern(code + i, "[cpcp]") && coeff[i + 1] == -1 && coeff[i + 3] == 1 && coeff[i + 2] == -coeff[i + 4])
