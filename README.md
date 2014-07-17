@@ -20,7 +20,7 @@ The following is a list of implementation-defined behaviors in sbfi.
 
 ### Cell size
 
-In the reference implementation, cells can hold an integer **between 0 and 255**. In sbfi, the default setting is that each cell is of the type **`unsigned char`**, which has almost always the same range. You can change this setting by modifying the **`CELL`** macro and defining with any other integer type.
+In the reference implementation, cells can hold an integer **between 0 and 255**. **In sbfi, the default setting is that each cell is of the type `unsigned char`**, which has almost always the same range. You can change this setting by modifying the **`CELL`** macro and defining with any other integer type.
 
 ### Cell bounds
 
@@ -33,15 +33,15 @@ unsigned char c = 255;
 ++c; // c = 0
 --c; // c = 255
 ```
-Cells in sbfi have this behavior too, since it's a natural way of dealing with overflows in many languages.
+**Cells in sbfi have this behavior too**, since it's a natural way of dealing with overflows in many languages.
 
 ### Array size
 
-The cell array contains **30000 cells** in the reference implementation, and so is the default in sbfi. However, you can change this setting by modifying the **`INITIAL_ARRAY_SIZE`** macro, as long as you define it with at least 1 cell.
+The cell array contains **30000 cells** in the reference implementation, and **so is the default in sbfi**. However, you can change this setting by modifying the **`INITIAL_ARRAY_SIZE`** macro, as long as you define it with at least 1 cell.
 
 ### Array bounds
 
-The reference implementation **raises an error and stops the execution** if a Brainfuck program tries to access a cell outside of the array. sbfi implements five different behaviors regarding the bound checking ; you can enable them by setting the **`MEMORY_BEHAVIOR`** macro to one of the following macros :
+The reference implementation **raises an error and stops the execution** if a Brainfuck program tries to access a cell outside of the array. **sbfi implements five different behaviors regarding the bound checking** ; you can enable them by setting the **`MEMORY_BEHAVIOR`** macro to one of the following macros :
 
 - **`NONE`**   : the default setting. No bound checking is performed at all, to improve performance. It is assumed that the program will not try to access a cell outside of the array. It it does, the behavior is **undefined**.
 - **`EXTEND`** : if needed, the array is extended during runtime to be able to run the program correctly. 
