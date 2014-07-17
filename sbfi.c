@@ -449,7 +449,7 @@ void exec_prog(const char *code, const int *coeff)
 
    /*
     * Because of weird (probably memory- or magic-related) things happening,
-    * removing this (now unused and unreachable label and line of code)
+    * removing this (now unused and unreachable) label and line of code
     * results in a noticeable loss of performance. Until I figure out how I
     * can prevent that, I have to keep this here to improve the speed.
     *
