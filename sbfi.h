@@ -53,6 +53,6 @@
  * call overheads. It's cool and fast *_*
  */
 
-#define NEXT_INSTRUCTION goto *(instr[(int)code[i]]);
+#define NEXT_INSTRUCTION MOVE_POINTER goto *(instr[(int)code[i]]);
 
 #endif
