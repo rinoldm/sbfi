@@ -194,6 +194,10 @@ int *optim_code(char *code)
     * We overwrite the excess characters with spaces that
     * we will remove afterwards.
     *
+    * TODO: remove useless loops (at least loops immediately
+    * following another loop). When I tried, it made the
+    * program slower for no reason.
+    *
     * TODO: optimize more complex constructs. Note : I tried
     * to optimize "simple loops" since it should be a huge
     * improvement, but unfortunately it made the program
@@ -238,7 +242,7 @@ int *optim_code(char *code)
             coeff[i] = coeff[i + 2];
         }
 
-        /*
+       /*
         else if (match_pattern(code + i, "[pcpc]") && coeff[i + 4] == -1 && coeff[i + 2] == 1 && coeff[i + 1] == -coeff[i + 3])
         {
             code[i] = 'm';
@@ -273,7 +277,8 @@ int *optim_code(char *code)
         {
             code[j] = code[i];
             coeff[j] = coeff[i];
-            mov[j++] = mov[i];
+            mov[j] = mov[i];
+            ++j;
         }
     }
     code[j] = '\0';
@@ -399,14 +404,14 @@ void exec_prog(const char *code, const int *coeff)
     CELL *ptr0 = xcalloc(array_size, sizeof(CELL));
     CELL *ptr = ptr0;
 
-    /*
-     * Thanks to a GCC extension, we can use a special operator "&&" to get
-     * label addresses and store them in an array of pointers. Thus, we will
-     * only need to lookup the next bytecode instruction in this array to
-     * go to the corresponding label without branching or looping at all,
-     * which makes this approach very efficient. You can think of it a bit
-     * like an inline function pointer array.
-     */
+   /*
+    * Thanks to a GCC extension, we can use a special operator "&&" to get
+    * label addresses and store them in an array of pointers. Thus, we will
+    * only need to lookup the next bytecode instruction in this array to
+    * go to the corresponding label without branching or looping at all,
+    * which makes this approach very efficient. You can think of it a bit
+    * like an inline function pointer array.
+    */
 
     static const void *instr[10] =
     {
@@ -427,83 +432,55 @@ void exec_prog(const char *code, const int *coeff)
     char buffer[CHUNK_SIZE];
     int buffer_index = 0;
 
-    /*
-     * i is the index we use to read the Brainfuck program, now converted
-     * into our bytecode. The NEXT_INSTRUCTION macro increments i by one, so
-     * we initialize it with -1 to execute the instruction at position 0.
-     * NEXT_INSTRUCTION will move directly to the next instruction without
-     * branching, thanks to the "computed gotos" made available by GCC.
-     */
+   /*
+    * i is the index we use to read the Brainfuck program, now converted
+    * into our bytecode. The NEXT_INSTRUCTION macro increments i by one, so
+    * we initialize it with -1 to execute the instruction at position 0.
+    * NEXT_INSTRUCTION will move directly to the next instruction without
+    * branching, thanks to the "computed gotos" made available by GCC.
+    */
 
     int i = -1;
-    MOVE_POINTER
     NEXT_INSTRUCTION
 
     changevalue:
         *ptr += coeff[i];
-        MOVE_POINTER
         NEXT_INSTRUCTION
 
-/*
- * WTF :c weird bug tests :
- *
- *                    | long.b | counter.b | prime.b | mandelbrot.b
- * ----------------------------------------------------------------
- *   ptr += coeff[i]  |  3.7s  |    6.5s   |   5.7s  |     3.4s
- *   NEXT_INSTRUCTION |        |           |         |
- * ----------------------------------------------------------------
- *   ptr += coeff[i]  |  2.5s  |    7.7s   |   5.7s  |     3.1s
- * ----------------------------------------------------------------
- *  NEXT_INSTRUCTION  |  5.2s  |    7.5s   |   6.4s  |     3.7s
- * ----------------------------------------------------------------
- *   only the label   |  3.7s  |    6.5s   |   5.7s  |     3.1s
- * ----------------------------------------------------------------
- *  without the label |  2.9s  |    7.1s   |   6.2s  |     3.7s
- *
- * So I have to choose between the second and the fourth solution to
- * optimize either long.b or counter.b.
- *
- * UPDATE A FEW HOURS LATER I still don't understand but I managed to
- * change a bit the bug so that the second solution is the faster for
- * both long.b and counter.b (--> 2.5s 6.5s 5.7s 3.1s). Enjoy c:
- *
- * UPDATE THE NEXT DAY with only the label the performance for long.b
- * doesn't drop anymore. I haven't touched anything since yesterday... #2spooky4me
- */
-
-// In short, if this (now useless) label is removed, the performance drops.
-// Plz help :c
+   /*
+    * Because of weird (probably memory- or magic-related) things happening,
+    * removing this (now unused and unreachable label and line of code)
+    * results in a noticeable loss of performance. Until I figure out how I
+    * can prevent that, I have to keep this here to improve the speed.
+    *
+    * I love C.
+    */ 
 
     movepointer:
         ptr += coeff[i];
-        //NEXT_INSTRUCTION
 
-    /*
-     * The tests with coeff[i] seem redundant (they're here to determine if
-     * it's a left or right bracket) but grouping the bracket instructions
-     * like this generates fewer asm instructions.
-     */
+   /*
+    * The tests with coeff[i] seem redundant (they're here to determine if
+    * it's a left or right bracket) but grouping the bracket instructions
+    * like this generates fewer asm instructions.
+    */
 
     leftbracket:
     rightbracket:
         i += ((coeff[i] > 0) && !(*ptr)) || ((coeff[i] < 0) && *ptr) ? coeff[i] : 0;
-        MOVE_POINTER
         NEXT_INSTRUCTION
 
     zerocell:
         *ptr = 0;
-        MOVE_POINTER
         NEXT_INSTRUCTION
 
     seekzerocell:
         for (; *ptr; ptr += coeff[i]);
-        MOVE_POINTER
         NEXT_INSTRUCTION
 
     movecell:
         *(ptr + coeff[i]) += *ptr;
         *ptr = 0;
-        MOVE_POINTER
         NEXT_INSTRUCTION
 
     // If we encounter an output instruction, we put it in our buffer.
@@ -513,7 +490,6 @@ void exec_prog(const char *code, const int *coeff)
         buffer[buffer_index++] = *ptr;
         if (buffer_index == CHUNK_SIZE)
             PRINT_BUFFER(CHUNK_SIZE)
-        MOVE_POINTER
         NEXT_INSTRUCTION
 
     // In case of input, we first print and reset the output buffer.
@@ -527,7 +503,6 @@ void exec_prog(const char *code, const int *coeff)
         else
             *ptr = EOF_INPUT_BEHAVIOR;
 #endif
-        MOVE_POINTER
         NEXT_INSTRUCTION
 
     // When the program ends, we print the output buffer and free the cell array.
