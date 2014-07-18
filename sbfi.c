@@ -291,8 +291,10 @@ int *optim_code(char *code)
     */
 
     for (i = 0; code[i]; ++i)
-        code[i] = strchr("cp[]0sm.,", code[i]) - "cp[]0sm.," + 1;
-
+    {
+        for (j = 0; code[i] != "cp[]0sm.,"[j]; ++j);
+        code[i] = j + 1;
+    }
     return (coeff);
 }
 
