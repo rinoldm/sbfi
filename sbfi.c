@@ -1,4 +1,4 @@
-/** Simple BrainFuck Interpreter V3.1 -- Written by Maxime Rinoldo **/
+/** Simple BrainFuck Interpreter V3.2 -- Written by Maxime Rinoldo **/
 
 /*
  * Use these macros to define the Brainfuck behavior.
@@ -242,7 +242,7 @@ int *optim_code(char *code)
             coeff[i] = coeff[i + 2];
         }
 
-       /*
+        /*
         else if (match_pattern(code + i, "[pcpc]") && coeff[i + 4] == -1 && coeff[i + 2] == 1 && coeff[i + 1] == -coeff[i + 3])
         {
             code[i] = 'm';
@@ -286,13 +286,13 @@ int *optim_code(char *code)
 
    /*
     * Transform commands into bytecode
-    *  \0  c  p  [  ]  0  s  m  .  ,
-    *   0  1  2  3  4  5  6  7  8  9
+    *  \0  c  [  ]  0  s  m  .  ,
+    *   0  1  2  3  4  5  6  7  8
     */
 
     for (i = 0; code[i]; ++i)
     {
-        for (j = 0; code[i] != "cp[]0sm.,"[j]; ++j);
+        for (j = 0; code[i] != "c[]0sm.,"[j]; ++j);
         code[i] = j + 1;
     }
     return (coeff);
@@ -315,9 +315,9 @@ int match_brackets(const char *code, int *coeff, const int left)
 
     for (i = left + 1; code[i]; ++i)
     {
-        if (code[i] == 3)       // left bracket
+        if (code[i] == 2)       // left bracket
             i = match_brackets(code, coeff, i);
-        else if (code[i] == 4)  // right bracket
+        else if (code[i] == 3)  // right bracket
         {
             coeff[left] = i - left;
             coeff[i] = left - i;
@@ -415,11 +415,10 @@ void exec_prog(const char *code, const int *coeff)
     * like an inline function pointer array.
     */
 
-    static const void *instr[10] =
+    static const void *instr[9] =
     {
         &&end,
         &&changevalue,
-        &&movepointer,
         &&leftbracket,
         &&rightbracket,
         &&zerocell,
@@ -449,27 +448,12 @@ void exec_prog(const char *code, const int *coeff)
         *ptr += coeff[i];
         NEXT_INSTRUCTION
 
-   /*
-    * Because of weird (probably memory- or magic-related) things happening,
-    * removing this (now unused and unreachable) label and line of code
-    * results in a noticeable loss of performance. Until I figure out how I
-    * can prevent that, I have to keep this here to improve the speed.
-    *
-    * I love C.
-    */ 
-
-    movepointer:
-        ptr += coeff[i];
-
-   /*
-    * The tests with coeff[i] seem redundant (they're here to determine if
-    * it's a left or right bracket) but grouping the bracket instructions
-    * like this generates fewer asm instructions.
-    */
-
     leftbracket:
+        i += !(*ptr) ? coeff[i] : 0;
+        NEXT_INSTRUCTION
+
     rightbracket:
-        i += ((coeff[i] > 0) && !(*ptr)) || ((coeff[i] < 0) && *ptr) ? coeff[i] : 0;
+        i += *ptr ? coeff[i] : 0;
         NEXT_INSTRUCTION
 
     zerocell:
