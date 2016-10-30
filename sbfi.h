@@ -1,4 +1,4 @@
-/** Simple BrainFuck Interpreter V3.1 -- Written by Maxime Rinoldo **/
+/** Simple BrainFuck Interpreter V3.2 -- Written by Maxime Rinoldo **/
 
 #ifndef __SBFI_H__
 #define __SBFI_H__
