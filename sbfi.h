@@ -29,15 +29,15 @@
 #define BLOCK   4
 
 #if (MEMORY_BEHAVIOR == EXTEND)
-    #define MOVE_POINTER extend_memory(&ptr0, &ptr, &array_size, mov[++i]);
+    #define MOVE_POINTER extend_memory(&ptr0, &ptr, &array_size, prog[++i].mov);
 #elif (MEMORY_BEHAVIOR == ABORT)
-    #define MOVE_POINTER abort_memory(ptr0, &ptr, array_size, mov[++i]);
+    #define MOVE_POINTER abort_memory(ptr0, &ptr, array_size, prog[++i].mov);
 #elif (MEMORY_BEHAVIOR == WRAP)
-    #define MOVE_POINTER wrap_memory(ptr0, &ptr, array_size, mov[++i]);
+    #define MOVE_POINTER wrap_memory(ptr0, &ptr, array_size, prog[++i].mov);
 #elif (MEMORY_BEHAVIOR == BLOCK)
-    #define MOVE_POINTER block_memory(ptr0, &ptr, array_size, mov[++i]);
+    #define MOVE_POINTER block_memory(ptr0, &ptr, array_size, prog[++i].mov);
 #else
-    #define MOVE_POINTER ptr += mov[++i];
+    #define MOVE_POINTER ptr += prog[++i].mov;
 #endif
 
 // Macros used for the output buffer
@@ -53,6 +53,13 @@
  * call overheads. It's cool and fast *_*
  */
 
-#define NEXT_INSTRUCTION MOVE_POINTER goto *(instr[(int)code[i]]);
+#define NEXT_INSTRUCTION MOVE_POINTER goto *(instr[(int)prog[i].code]);
+
+typedef struct
+{
+    char code;
+    int coeff;
+    int mov;
+} comm;
 
 #endif
