@@ -6,7 +6,7 @@ Explanations about how my program works can be found in the comments !
 
 ## Compilation
 
-I compile with `gcc -Wall -Wextra -O3 -s`, which doesn't output any warning.
+I compile with `gcc -Wall -Wextra -Ofast -s`, which doesn't output any warning.
 
 `-pedantic` complains about label addresses / computed gotos, C++ comments, and declarations mixed with code.
 
