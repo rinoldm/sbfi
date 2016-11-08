@@ -398,7 +398,7 @@ static void block_memory(CELL *ptr0, CELL **ptr, size_t size, int shift)
 }
 #endif
 
-void exec_prog(const char *code, const int *coeff)
+void exec_prog(const comm *prog)
 {
     size_t array_size = INITIAL_ARRAY_SIZE;
 
@@ -446,15 +446,15 @@ void exec_prog(const char *code, const int *coeff)
     NEXT_INSTRUCTION
 
     changevalue:
-        *ptr += coeff[i];
+        *ptr += prog[i].coeff;
         NEXT_INSTRUCTION
 
     leftbracket:
-        i += !(*ptr) ? coeff[i] : 0;
+        i += !(*ptr) ? prog[i].coeff : 0;
         NEXT_INSTRUCTION
 
     rightbracket:
-        i += *ptr ? coeff[i] : 0;
+        i += *ptr ? prog[i].coeff : 0;
         NEXT_INSTRUCTION
 
     zerocell:
@@ -462,11 +462,11 @@ void exec_prog(const char *code, const int *coeff)
         NEXT_INSTRUCTION
 
     seekzerocell:
-        for (; *ptr; ptr += coeff[i]);
+        for (; *ptr; ptr += prog[i].coeff);
         NEXT_INSTRUCTION
 
     movecell:
-        *(ptr + coeff[i]) += *ptr;
+        *(ptr + prog[i].coeff) += *ptr;
         *ptr = 0;
         NEXT_INSTRUCTION
 
@@ -516,9 +516,18 @@ int main(int ac, char **av)
     strip_comments(code);
     coeff = optim_code(code);
     match_brackets(code, coeff, -1);
-    exec_prog(code, coeff);
-    free(code);
-    free(coeff);
-    free(mov);
+
+    comm *prog = xcalloc(strlen(code) + 1, sizeof(comm));
+    unsigned int i;
+    for (i = 0; i <= strlen(code); ++i)
+    {
+        prog[i].code = code[i];
+        prog[i].coeff = coeff[i];
+        prog[i].mov = mov[i];
+    }
+
+    exec_prog(prog);
+
+    free(prog);
     return (EXIT_SUCCESS);
 }
