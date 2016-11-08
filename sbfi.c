@@ -90,8 +90,9 @@ void check_src(const char *code)
 
     // The cell array must be at least one cell long
 
-    if (INITIAL_ARRAY_SIZE <= 0)
-        error(ERROR_ARRAY_SIZE);
+#if (INITIAL_ARRAY_SIZE <= 0)
+    error(ERROR_ARRAY_SIZE);
+#endif
 
    /*
     * This counts the number of left and right brackets in the
