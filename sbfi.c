@@ -137,8 +137,8 @@ void strip_comments(char *code)
 int match_pattern(const char *codeptr, const char *pattern)
 {
     size_t i;
-    for (i = 0; i < strlen(pattern) && codeptr[i] == pattern[i]; ++i);
-    return (i == strlen(pattern));
+    for (i = 0; pattern[i] && codeptr[i] == pattern[i]; ++i);
+    return (!pattern[i]);
 }
 
 int *optim_code(char *code)
