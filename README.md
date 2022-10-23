@@ -1,6 +1,6 @@
 # sbfi
 
-Simple BrainFuck Interpreter written in C by [Maxime Rinoldo](mailto:maxime.rinoldo@epitech.eu). The aim of this interpreter is to be as fast as possible while remaining easy to understand.
+Simple BrainFuck Interpreter written in C. The aim of this interpreter is to be as fast as possible while remaining easy to understand.
 
 Explanations about how my program works can be found in the comments !
 
